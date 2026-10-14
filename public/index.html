@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtFlow Automation - Whitelist Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .table-scroll::-webkit-scrollbar { height: 8px; }
+        .table-scroll::-webkit-scrollbar-track { background: #0f172a; border-radius: 8px; }
+        .table-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 8px; }
+        .table-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen">
+
+    <nav class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 px-3 sm:px-6 py-3 sm:py-4 shadow-md">
+        <div class="max-w-7xl mx-auto flex justify-between items-center gap-2">
+            <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
+                <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-lg shadow-indigo-500/30 shrink-0">
+                    <i class="fa-solid fa-shield-halved text-lg sm:text-xl"></i>
+                </div>
+                <div class="min-w-0">
+                    <h1 class="text-sm sm:text-lg font-bold tracking-tight text-white truncate">ArtFlow Whitelist</h1>
+                    <p class="text-[10px] sm:text-xs text-slate-400 truncate">Device License & Access Management</p>
+                </div>
+            </div>
+            <div class="flex items-center shrink-0">
+                <span class="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">
+                    <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 mr-1 sm:mr-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="hidden xs:inline">Server Online</span>
+                    <span class="xs:hidden">Online</span>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-3 sm:px-6 py-5 sm:py-8">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl flex items-center justify-between">
+                <div class="min-w-0">
+                    <p class="text-xs sm:text-sm font-medium text-slate-400">Total Perangkat</p>
+                    <h3 id="statTotal" class="text-2xl sm:text-3xl font-extrabold text-white mt-1">0</h3>
+                </div>
+                <div class="bg-indigo-500/10 text-indigo-400 p-3 sm:p-4 rounded-xl border border-indigo-500/20 shrink-0 ml-3">
+                    <i class="fa-solid fa-devices text-lg sm:text-xl"></i>
+                </div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl flex items-center justify-between">
+                <div class="min-w-0">
+                    <p class="text-xs sm:text-sm font-medium text-slate-400">Perangkat Aktif</p>
+                    <h3 id="statActive" class="text-2xl sm:text-3xl font-extrabold text-emerald-400 mt-1">0</h3>
+                </div>
+                <div class="bg-emerald-500/10 text-emerald-400 p-3 sm:p-4 rounded-xl border border-emerald-500/20 shrink-0 ml-3">
+                    <i class="fa-solid fa-circle-check text-lg sm:text-xl"></i>
+                </div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl flex items-center justify-between sm:col-span-2 lg:col-span-1">
+                <div class="min-w-0">
+                    <p class="text-xs sm:text-sm font-medium text-slate-400">Non-Aktif / Kedaluwarsa</p>
+                    <h3 id="statInactive" class="text-2xl sm:text-3xl font-extrabold text-rose-400 mt-1">0</h3>
+                </div>
+                <div class="bg-rose-500/10 text-rose-400 p-3 sm:p-4 rounded-xl border border-rose-500/20 shrink-0 ml-3">
+                    <i class="fa-solid fa-triangle-exclamation text-lg sm:text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-8">
+
+            <div class="space-y-5 sm:space-y-6 lg:col-span-1">
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl">
+                    <h2 class="text-sm sm:text-base font-bold text-white mb-4 flex items-center">
+                        <i class="fa-solid fa-user-plus text-indigo-400 mr-2"></i> Tambah / Perbarui Perangkat
+                    </h2>
+                    <form id="deviceForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Device ID (Android ID)*</label>
+                            <input type="text" id="deviceId" required placeholder="Contoh: a1b2c3d4e5f67890"
+                                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 sm:px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Nama Perangkat / Pemilik</label>
+                            <input type="text" id="deviceName" placeholder="Contoh: Samsung S22 - Budi"
+                                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 sm:px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Status</label>
+                            <select id="deviceStatus" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 sm:px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+                                <option value="active">Active (Aktif)</option>
+                                <option value="inactive">Inactive (Non-Aktif)</option>
+                                <option value="pending">Pending (Menunggu)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Masa Aktif</label>
+                            <div class="flex gap-2">
+                                <select id="expiresPreset" onchange="handlePresetChange()"
+                                    class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 sm:px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+                                    <option value="">— Tanpa Kedaluwarsa —</option>
+                                    <option value="30">30 Hari Kedepan</option>
+                                    <option value="60">60 Hari Kedepan</option>
+                                    <option value="90">90 Hari Kedepan</option>
+                                    <option value="custom">Custom (isi manual)...</option>
+                                </select>
+                                <input type="number" id="expiresCustomDays" min="1" placeholder="Hari"
+                                    class="w-24 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition hidden">
+                            </div>
+                            <p id="expiresPreview" class="text-[11px] text-slate-400 mt-1.5 hidden">
+                                <i class="fa-solid fa-calendar-check text-indigo-400 mr-1"></i>
+                                Akan aktif hingga: <span id="expiresPreviewDate" class="text-indigo-300 font-medium"></span>
+                            </p>
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl shadow-lg shadow-indigo-600/30 transition text-sm">
+                            <i class="fa-solid fa-save mr-2"></i> Simpan ke Whitelist
+                        </button>
+                    </form>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl">
+                    <h3 class="text-sm font-bold text-white mb-3 flex items-center">
+                        <i class="fa-solid fa-vial text-emerald-400 mr-2"></i> Uji Cek Whitelist
+                    </h3>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="testDeviceId" placeholder="Masukkan Device ID..."
+                            class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                        <button onclick="testCheckWhitelist()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl text-xs font-medium transition">
+                            <i class="fa-solid fa-magnifying-glass mr-1 sm:hidden"></i> Cek
+                        </button>
+                    </div>
+                    <div id="testResult" class="mt-3 text-xs p-3 rounded-xl bg-slate-950 border border-slate-800 hidden"></div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl">
+                    <h3 class="text-sm font-bold text-white mb-3 flex items-center">
+                        <i class="fa-solid fa-cloud-arrow-down text-indigo-400 mr-2"></i> Manajemen Update APK
+                    </h3>
+                    <form id="versionForm" onsubmit="handleVersionSubmit(event)" class="space-y-3">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-medium text-slate-400 mb-1">Version Code</label>
+                                <input type="number" id="latestVersionCode" required placeholder="2"
+                                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-medium text-slate-400 mb-1">Version Name</label>
+                                <input type="text" id="latestVersionName" required placeholder="1.1.0"
+                                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-medium text-slate-400 mb-1">Download URL (.apk)</label>
+                            <input type="url" id="updateUrl" required placeholder="https://..."
+                                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-medium text-slate-400 mb-1">Catatan Rilis (Release Notes)</label>
+                            <textarea id="releaseNotes" rows="2" placeholder="Perbaikan bug..."
+                                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-slate-800 hover:bg-slate-700 text-indigo-300 font-semibold py-2 rounded-xl border border-indigo-500/20 transition text-xs">
+                            <i class="fa-solid fa-upload mr-1"></i> Publikasikan Update
+                        </button>
+                    </form>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl">
+                    <h3 class="text-sm font-bold text-white mb-3 flex items-center">
+                        <i class="fa-solid fa-bullhorn text-rose-400 mr-2"></i> Kirim Broadcast / Webhook
+                    </h3>
+                    <form id="broadcastForm" onsubmit="handleBroadcastSubmit(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-medium text-slate-400 mb-1">Judul Pengumuman</label>
+                            <input type="text" id="bcTitle" required placeholder="Contoh: Maintenance Server"
+                                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-medium text-slate-400 mb-1">Pesan Notifikasi</label>
+                            <textarea id="bcMessage" rows="2" required placeholder="Pesan untuk seluruh pengguna..."
+                                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"></textarea>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="bcActive" class="rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-0">
+                            <label for="bcActive" class="text-xs text-slate-300">Aktifkan & Kirim ke User</label>
+                        </div>
+                        <button type="submit" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-semibold py-2 rounded-xl shadow-lg shadow-rose-600/20 transition text-xs">
+                            <i class="fa-solid fa-paper-plane mr-1"></i> Kirim Broadcast
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl lg:col-span-2">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5 sm:mb-6">
+                    <h2 class="text-sm sm:text-base font-bold text-white flex items-center">
+                        <i class="fa-solid fa-list text-indigo-400 mr-2"></i> Daftar Perangkat Whitelist
+                    </h2>
+                    <button onclick="loadDevices()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-xl transition flex items-center justify-center sm:justify-start w-full sm:w-auto">
+                        <i class="fa-solid fa-rotate mr-1.5"></i> Refresh
+                    </button>
+                </div>
+
+                <div class="hidden md:block overflow-x-auto table-scroll">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="bg-slate-950 text-xs uppercase text-slate-400 border-b border-slate-800">
+                            <tr>
+                                <th class="px-4 py-3 rounded-l-xl">Perangkat / ID</th>
+                                <th class="px-4 py-3">Status</th>
+                                <th class="px-4 py-3">Terdaftar / Kedaluwarsa</th>
+                                <th class="px-4 py-3 text-right rounded-r-xl">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deviceTableBody" class="divide-y divide-slate-800/60">
+                        </tbody>
+                    </table>
+                    <div id="emptyState" class="text-center py-12 hidden">
+                        <i class="fa-solid fa-folder-open text-3xl text-slate-600 mb-3"></i>
+                        <p class="text-sm text-slate-400">Belum ada perangkat terdaftar.</p>
+                    </div>
+                </div>
+
+                <div id="deviceCardList" class="md:hidden space-y-3">
+                </div>
+                <div id="emptyStateMobile" class="md:hidden text-center py-12 hidden">
+                    <i class="fa-solid fa-folder-open text-3xl text-slate-600 mb-3"></i>
+                    <p class="text-sm text-slate-400">Belum ada perangkat terdaftar.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="toast" class="fixed bottom-4 right-4 left-4 sm:left-auto sm:max-w-sm transform translate-y-20 opacity-0 transition-all duration-300 z-50 bg-slate-800 border border-slate-700 text-white px-4 sm:px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 shrink-0"></i>
+        <span id="toastMessage" class="text-xs font-medium">Berhasil</span>
+    </div>
+
+    <script>
+        let devicesList = [];
+
+        async function loadDevices() {
+            try {
+                const res = await fetch('/api/devices');
+                const data = await res.json();
+                devicesList = data.devices || [];
+                renderDevices();
+                updateStats();
+            } catch (err) {
+                showToast('Gagal memuat data perangkat', 'error');
+            }
+        }
+
+        async function loadVersionInfo() {
+            try {
+                const res = await fetch('/api/version');
+                const data = await res.json();
+                if (data) {
+                    document.getElementById('latestVersionCode').value = data.latestVersionCode || 1;
+                    document.getElementById('latestVersionName').value = data.latestVersionName || '1.0.0';
+                    document.getElementById('updateUrl').value = data.updateUrl || '';
+                    document.getElementById('releaseNotes').value = data.releaseNotes || '';
+                }
+            } catch (err) { }
+        }
+
+        async function loadBroadcastInfo() {
+            try {
+                const res = await fetch('/api/broadcast');
+                const data = await res.json();
+                if (data) {
+                    document.getElementById('bcTitle').value = data.title || '';
+                    document.getElementById('bcMessage').value = data.message || '';
+                    document.getElementById('bcActive').checked = !!data.active;
+                }
+            } catch (err) { }
+        }
+
+        function getStatusBadge(d) {
+            const isExpired = d.expiresAt && new Date() > new Date(d.expiresAt);
+            const isActive = d.status === 'active' && !isExpired;
+            if (isActive) {
+                return `<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap">Active</span>`;
+            } else if (d.status === 'pending') {
+                return `<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/25 whitespace-nowrap">Pending</span>`;
+            } else {
+                return `<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20 whitespace-nowrap">${isExpired ? 'Expired' : 'Inactive'}</span>`;
+            }
+        }
+
+        function getActionButtons(d) {
+            const approveAction = d.status === 'pending'
+                ? `<button onclick="approveDevice('${d.deviceId}')" class="text-emerald-400 hover:text-emerald-300 p-2 transition" title="Approve">
+                        <i class="fa-solid fa-check-to-slot text-base"></i>
+                   </button>`
+                : '';
+            return `
+                ${approveAction}
+                <button onclick="editDevice('${d.deviceId}')" class="text-indigo-400 hover:text-indigo-300 p-2 transition" title="Edit">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button onclick="deleteDevice('${d.deviceId}')" class="text-rose-400 hover:text-rose-300 p-2 transition" title="Hapus">
+                    <i class="fa-solid fa-trash"></i>
+                </button>`;
+        }
+
+        function renderDevices() {
+            const tbody = document.getElementById('deviceTableBody');
+            const cardList = document.getElementById('deviceCardList');
+            const emptyState = document.getElementById('emptyState');
+            const emptyStateMobile = document.getElementById('emptyStateMobile');
+
+            tbody.innerHTML = '';
+            cardList.innerHTML = '';
+
+            if (devicesList.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyStateMobile.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+            emptyStateMobile.classList.add('hidden');
+
+            devicesList.forEach(d => {
+                const isExpired = d.expiresAt && new Date() > new Date(d.expiresAt);
+                const regDate = new Date(d.registeredAt).toLocaleDateString('id-ID', { dateStyle: 'medium' });
+                const expDate = d.expiresAt ? new Date(d.expiresAt).toLocaleDateString('id-ID', { dateStyle: 'medium' }) : 'Selamanya';
+                const statusBadge = getStatusBadge(d);
+                const actions = getActionButtons(d);
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/40 transition";
+                tr.innerHTML = `
+                    <td class="px-4 py-4">
+                        <div class="font-bold text-white">${escapeHtml(d.deviceName || 'Unknown')}</div>
+                        <div class="text-xs font-mono text-slate-400 mt-0.5 break-all">${escapeHtml(d.deviceId)}</div>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap">${statusBadge}</td>
+                    <td class="px-4 py-4 text-xs text-slate-400">
+                        <div>Reg: ${regDate}</div>
+                        <div>Exp: ${expDate}</div>
+                    </td>
+                    <td class="px-4 py-4 text-right whitespace-nowrap">${actions}</td>
+                `;
+                tbody.appendChild(tr);
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-3";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start gap-3">
+                        <div class="min-w-0 flex-1">
+                            <div class="font-bold text-white text-sm truncate">${escapeHtml(d.deviceName || 'Unknown')}</div>
+                            <div class="text-[11px] font-mono text-slate-400 mt-0.5 break-all">${escapeHtml(d.deviceId)}</div>
+                        </div>
+                        <div class="shrink-0">${statusBadge}</div>
+                    </div>
+                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-400 border-t border-slate-800/60 pt-2">
+                        <div><span class="text-slate-500">Reg:</span> ${regDate}</div>
+                        <div><span class="text-slate-500">Exp:</span> ${expDate}</div>
+                    </div>
+                    <div class="flex items-center justify-end gap-1 border-t border-slate-800/60 pt-2">
+                        ${actions}
+                    </div>
+                `;
+                cardList.appendChild(card);
+            });
+        }
+
+        function updateStats() {
+            const total = devicesList.length;
+            const active = devicesList.filter(d => d.status === 'active' && (!d.expiresAt || new Date() <= new Date(d.expiresAt))).length;
+            const inactive = total - active;
+
+            document.getElementById('statTotal').innerText = total;
+            document.getElementById('statActive').innerText = active;
+            document.getElementById('statInactive').innerText = inactive;
+        }
+
+        function handlePresetChange() {
+            const preset = document.getElementById('expiresPreset').value;
+            const customInput = document.getElementById('expiresCustomDays');
+            const preview = document.getElementById('expiresPreview');
+            const previewDate = document.getElementById('expiresPreviewDate');
+
+            if (preset === 'custom') {
+                customInput.classList.remove('hidden');
+                customInput.focus();
+            } else {
+                customInput.classList.add('hidden');
+                customInput.value = '';
+            }
+
+            const days = getSelectedDays();
+            if (days && days > 0) {
+                const target = new Date();
+                target.setDate(target.getDate() + days);
+                previewDate.textContent = target.toLocaleDateString('id-ID', {
+                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                });
+                preview.classList.remove('hidden');
+            } else {
+                preview.classList.add('hidden');
+            }
+        }
+
+        function getSelectedDays() {
+            const preset = document.getElementById('expiresPreset').value;
+            if (preset === 'custom') {
+                const val = parseInt(document.getElementById('expiresCustomDays').value);
+                return !isNaN(val) && val > 0 ? val : null;
+            }
+            if (preset && preset !== '') {
+                return parseInt(preset);
+            }
+            return null;
+        }
+
+        function calcExpiresAtFromDays(days) {
+            if (!days || days <= 0) return null;
+            const target = new Date();
+            target.setDate(target.getDate() + days);
+            target.setHours(23, 59, 59, 999);
+            return target.toISOString();
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const deviceId = document.getElementById('deviceId').value.trim();
+            const deviceName = document.getElementById('deviceName').value.trim();
+            const status = document.getElementById('deviceStatus').value;
+            const days = getSelectedDays();
+            const expiresAt = calcExpiresAtFromDays(days);
+
+            try {
+                const res = await fetch('/api/add-device', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ deviceId, deviceName, status, expiresAt })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showToast(data.message, 'success');
+                    document.getElementById('deviceForm').reset();
+                    document.getElementById('expiresCustomDays').classList.add('hidden');
+                    document.getElementById('expiresPreview').classList.add('hidden');
+                    loadDevices();
+                } else {
+                    showToast(data.message || 'Gagal menyimpan perangkat', 'error');
+                }
+            } catch (err) {
+                showToast('Terjadi kesalahan jaringan', 'error');
+            }
+        }
+
+        async function approveDevice(deviceId) {
+            try {
+                const res = await fetch('/api/approve-device', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ deviceId, status: 'active' })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showToast('Perangkat berhasil di-approve!', 'success');
+                    loadDevices();
+                } else {
+                    showToast(data.message || 'Gagal approve', 'error');
+                }
+            } catch (err) {
+                showToast('Terjadi kesalahan jaringan', 'error');
+            }
+        }
+
+        async function handleVersionSubmit(e) {
+            e.preventDefault();
+            const latestVersionCode = parseInt(document.getElementById('latestVersionCode').value);
+            const latestVersionName = document.getElementById('latestVersionName').value.trim();
+            const updateUrl = document.getElementById('updateUrl').value.trim();
+            const releaseNotes = document.getElementById('releaseNotes').value.trim();
+
+            try {
+                const res = await fetch('/api/version', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ latestVersionCode, latestVersionName, updateUrl, releaseNotes, mandatory: false })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showToast('Info update berhasil dipublikasikan!', 'success');
+                } else {
+                    showToast(data.message || 'Gagal menyimpan update', 'error');
+                }
+            } catch (err) {
+                showToast('Terjadi kesalahan jaringan', 'error');
+            }
+        }
+
+        async function handleBroadcastSubmit(e) {
+            e.preventDefault();
+            const title = document.getElementById('bcTitle').value.trim();
+            const message = document.getElementById('bcMessage').value.trim();
+            const active = document.getElementById('bcActive').checked;
+
+            try {
+                const res = await fetch('/api/broadcast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, message, active })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showToast(data.message, 'success');
+                } else {
+                    showToast(data.message || 'Gagal mengirim broadcast', 'error');
+                }
+            } catch (err) {
+                showToast('Terjadi kesalahan jaringan', 'error');
+            }
+        }
+
+        async function deleteDevice(deviceId) {
+            if (!confirm(`Hapus perangkat ${deviceId} dari whitelist?`)) return;
+            try {
+                const res = await fetch(`/api/devices/${encodeURIComponent(deviceId)}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showToast('Perangkat berhasil dihapus', 'success');
+                    loadDevices();
+                } else {
+                    showToast(data.message || 'Gagal menghapus', 'error');
+                }
+            } catch (err) {
+                showToast('Terjadi kesalahan jaringan', 'error');
+            }
+        }
+
+        function editDevice(deviceId) {
+            const d = devicesList.find(x => x.deviceId === deviceId);
+            if (!d) return;
+            document.getElementById('deviceId').value = d.deviceId;
+            document.getElementById('deviceName').value = d.deviceName || '';
+            document.getElementById('deviceStatus').value = d.status || 'active';
+
+            const presetSelect = document.getElementById('expiresPreset');
+            const customInput = document.getElementById('expiresCustomDays');
+            const preview = document.getElementById('expiresPreview');
+            const previewDate = document.getElementById('expiresPreviewDate');
+
+            if (d.expiresAt) {
+                const now = new Date();
+                const exp = new Date(d.expiresAt);
+                const diffDays = Math.max(1, Math.round((exp - now) / (1000 * 60 * 60 * 24)));
+
+                if ([30, 60, 90].includes(diffDays)) {
+                    presetSelect.value = String(diffDays);
+                    customInput.classList.add('hidden');
+                    customInput.value = '';
+                } else {
+                    presetSelect.value = 'custom';
+                    customInput.classList.remove('hidden');
+                    customInput.value = diffDays;
+                }
+
+                previewDate.textContent = exp.toLocaleDateString('id-ID', {
+                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                });
+                preview.classList.remove('hidden');
+            } else {
+                presetSelect.value = '';
+                customInput.classList.add('hidden');
+                customInput.value = '';
+                preview.classList.add('hidden');
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast('Data dimuat ke form untuk diedit', 'success');
+        }
+
+        async function testCheckWhitelist() {
+            const deviceId = document.getElementById('testDeviceId').value.trim();
+            const resultBox = document.getElementById('testResult');
+            if (!deviceId) {
+                showToast('Masukkan Device ID terlebih dahulu', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/check-whitelist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ deviceId })
+                });
+                const data = await res.json();
+                resultBox.classList.remove('hidden');
+                if (data.whitelisted) {
+                    resultBox.className = "mt-3 text-xs p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300";
+                    resultBox.innerHTML = `<i class="fa-solid fa-check-circle mr-1"></i> <strong>TER-WHITELIST:</strong> ${data.message}`;
+                } else {
+                    resultBox.className = "mt-3 text-xs p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300";
+                    resultBox.innerHTML = `<i class="fa-solid fa-xmark-circle mr-1"></i> <strong>TIDAK TER-WHITELIST:</strong> ${data.message}`;
+                }
+            } catch (err) {
+                showToast('Gagal melakukan uji cek', 'error');
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMessage.innerText = message;
+            if (type === 'success') {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400 shrink-0";
+            } else {
+                toastIcon.className = "fa-solid fa-triangle-exclamation text-rose-400 shrink-0";
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        document.getElementById('expiresCustomDays').addEventListener('input', handlePresetChange);
+
+        loadDevices();
+        loadVersionInfo();
+        loadBroadcastInfo();
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('[SW] Service Worker registered:', reg.scope))
+                    .catch(err => console.error('[SW] Service Worker registration failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>

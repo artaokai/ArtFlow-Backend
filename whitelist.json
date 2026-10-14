@@ -1,0 +1,26 @@
+{
+  "devices": [
+    {
+      "deviceId": "d26b2b9436871f95",
+      "deviceName": "Arta",
+      "status": "active",
+      "registeredAt": "2026-10-14T06:50:32.677Z",
+      "updatedAt": "2026-10-14T06:52:41.053Z",
+      "expiresAt": null
+    }
+  ],
+  "updateInfo": {
+    "latestVersionCode": 1,
+    "latestVersionName": "1.0.0",
+    "updateUrl": "",
+    "releaseNotes": "Rilis awal ArtFlow Automation.",
+    "mandatory": false
+  },
+  "broadcast": {
+    "id": "bc_1791959372385",
+    "title": "Pengumuman Sistem",
+    "message": "asep",
+    "active": true,
+    "timestamp": "2026-10-14T06:29:32.386Z"
+  }
+}
