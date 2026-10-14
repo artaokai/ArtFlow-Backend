@@ -39,6 +39,14 @@
       "registeredAt": "2026-10-14T08:25:47.248Z",
       "updatedAt": "2026-10-14T08:26:03.612Z",
       "expiresAt": null
+    },
+    {
+      "deviceId": "45f7b2651f465cb1",
+      "deviceName": "NURULENI",
+      "status": "pending",
+      "registeredAt": "2026-10-14T09:47:41.273Z",
+      "updatedAt": "2026-10-14T09:47:41.273Z",
+      "expiresAt": null
     }
   ],
   "updateInfo": {
