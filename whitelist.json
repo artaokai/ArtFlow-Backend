@@ -12,8 +12,8 @@
   "updateInfo": {
     "latestVersionCode": 1,
     "latestVersionName": "1.0.0",
-    "updateUrl": "",
-    "releaseNotes": "Rilis awal ArtFlow Automation.",
+    "updateUrl": "https://github.com/artaokai/ArtFlow-APK/releases/download/v1.0.0/ArtFlowAutomation-v1.0.apk",
+    "releaseNotes": "Rilis resmi v1.0.0 ArtFlow Automation.",
     "mandatory": false
   },
   "broadcast": {
