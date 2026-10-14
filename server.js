@@ -6,10 +6,55 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Vercel serverless environment support
+// Vercel & GitHub API Integration settings
 const isVercel = process.env.VERCEL === '1' || process.env.VERCEL === 'true' || !!process.env.VERCEL;
 const SEED_DB_PATH = path.join(__dirname, 'whitelist.json');
 const DB_PATH = isVercel ? path.join('/tmp', 'whitelist.json') : SEED_DB_PATH;
+
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GITHUB_OWNER = process.env.GITHUB_OWNER || 'artaokai';
+const GITHUB_REPO = process.env.GITHUB_REPO || 'ArtFlow-Backend';
+const GITHUB_FILE_PATH = process.env.GITHUB_FILE_PATH || 'whitelist.json';
+
+let githubCache = {
+    data: null,
+    sha: null,
+    lastFetched: 0
+};
+
+// Universal HTTP fetch helper (supports Node 18+ fetch or fallback https module)
+function httpFetch(urlStr, options = {}) {
+    if (typeof globalThis.fetch === 'function') {
+        return globalThis.fetch(urlStr, options);
+    }
+    return new Promise((resolve, reject) => {
+        const https = require('https');
+        const url = new URL(urlStr);
+        const reqOptions = {
+            hostname: url.hostname,
+            path: url.pathname + url.search,
+            method: options.method || 'GET',
+            headers: options.headers || {}
+        };
+        const req = https.request(reqOptions, (res) => {
+            let body = '';
+            res.on('data', chunk => body += chunk);
+            res.on('end', () => {
+                resolve({
+                    ok: res.statusCode >= 200 && res.statusCode < 300,
+                    status: res.statusCode,
+                    json: async () => JSON.parse(body),
+                    text: async () => body
+                });
+            });
+        });
+        req.on('error', reject);
+        if (options.body) {
+            req.write(options.body);
+        }
+        req.end();
+    });
+}
 
 // CORS Middleware for Android App & Web client access
 app.use((req, res, next) => {
@@ -29,8 +74,45 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Serve static frontend dashboard from 'public' folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Helper function to read whitelist database
-function readWhitelistDb() {
+// Helper function to read whitelist database (GitHub API or Local FS)
+async function readWhitelistDb() {
+    // If GITHUB_TOKEN is available, try fetching directly from GitHub API
+    if (GITHUB_TOKEN) {
+        try {
+            // Cache for 10s to minimize API requests during bursts
+            if (githubCache.data && (Date.now() - githubCache.lastFetched < 10000)) {
+                return githubCache.data;
+            }
+
+            const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE_PATH}`;
+            const response = await httpFetch(apiUrl, {
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'User-Agent': 'ArtFlow-Backend-Server'
+                }
+            });
+
+            if (response.ok) {
+                const json = await response.json();
+                githubCache.sha = json.sha;
+                const contentStr = Buffer.from(json.content, 'base64').toString('utf8');
+                githubCache.data = JSON.parse(contentStr);
+                githubCache.lastFetched = Date.now();
+                return githubCache.data;
+            } else {
+                console.warn(`[GitHub API] GET /contents failed with status ${response.status}`);
+            }
+        } catch (err) {
+            console.error('[GitHub API] Error reading whitelist from GitHub:', err.message);
+        }
+    }
+
+    // Fallback to local file system or in-memory cache
+    if (githubCache.data) {
+        return githubCache.data;
+    }
+
     try {
         if (!fs.existsSync(DB_PATH)) {
             let initialData = { devices: [] };
@@ -48,25 +130,84 @@ function readWhitelistDb() {
         const data = fs.readFileSync(DB_PATH, 'utf8');
         return JSON.parse(data);
     } catch (err) {
-        console.error('Error reading whitelist database:', err);
+        console.error('Error reading local whitelist database:', err);
         return { devices: [] };
     }
 }
 
-// Helper function to write whitelist database
-function writeWhitelistDb(data) {
+// Helper function to write whitelist database (GitHub API & Local FS)
+async function writeWhitelistDb(data, commitMessage = "Update whitelist.json via Admin Dashboard") {
+    // Update memory cache
+    githubCache.data = data;
+    githubCache.lastFetched = Date.now();
+
+    // Write to local file system if possible
     try {
         fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8');
-        return true;
-    } catch (err) {
-        console.error('Error writing whitelist database:', err);
-        return false;
+    } catch (_e) {}
+
+    // If GITHUB_TOKEN is available, commit and push to GitHub Repo
+    if (GITHUB_TOKEN) {
+        try {
+            const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE_PATH}`;
+
+            // Fetch current SHA if missing
+            if (!githubCache.sha) {
+                const getRes = await httpFetch(apiUrl, {
+                    headers: {
+                        'Authorization': `token ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'User-Agent': 'ArtFlow-Backend-Server'
+                    }
+                });
+                if (getRes.ok) {
+                    const getJson = await getRes.json();
+                    githubCache.sha = getJson.sha;
+                }
+            }
+
+            const contentBase64 = Buffer.from(JSON.stringify(data, null, 2), 'utf8').toString('base64');
+            const putBody = {
+                message: commitMessage,
+                content: contentBase64,
+                branch: 'main'
+            };
+            if (githubCache.sha) {
+                putBody.sha = githubCache.sha;
+            }
+
+            const putRes = await httpFetch(apiUrl, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'ArtFlow-Backend-Server'
+                },
+                body: JSON.stringify(putBody)
+            });
+
+            if (putRes.ok) {
+                const putJson = await putRes.json();
+                if (putJson.content && putJson.content.sha) {
+                    githubCache.sha = putJson.content.sha;
+                }
+                console.log(`[GitHub API] Committed to ${GITHUB_REPO}/whitelist.json: "${commitMessage}"`);
+                return true;
+            } else {
+                const errText = await putRes.text();
+                console.error(`[GitHub API] PUT failed (${putRes.status}):`, errText);
+            }
+        } catch (err) {
+            console.error('[GitHub API] Error committing to GitHub:', err.message);
+        }
     }
+
+    return true;
 }
 
 // 1. Endpoint POST /api/check-whitelist
-// Validates if deviceId exists, is active, and has not expired.
-app.post('/api/check-whitelist', (req, res) => {
+app.post('/api/check-whitelist', async (req, res) => {
     try {
         const { deviceId } = req.body;
 
@@ -78,7 +219,7 @@ app.post('/api/check-whitelist', (req, res) => {
             });
         }
 
-        const db = readWhitelistDb();
+        const db = await readWhitelistDb();
         const cleanDeviceId = deviceId.trim();
         const device = db.devices.find(d => d.deviceId.toLowerCase() === cleanDeviceId.toLowerCase());
 
@@ -90,7 +231,6 @@ app.post('/api/check-whitelist', (req, res) => {
             });
         }
 
-        // Check if device status is active
         if (device.status !== 'active') {
             return res.status(200).json({
                 status: 'success',
@@ -99,7 +239,6 @@ app.post('/api/check-whitelist', (req, res) => {
             });
         }
 
-        // Check expiration if expiresAt is defined
         if (device.expiresAt) {
             const expiryDate = new Date(device.expiresAt);
             if (new Date() > expiryDate) {
@@ -137,8 +276,7 @@ app.post('/api/check-whitelist', (req, res) => {
 });
 
 // 2. Endpoint POST /api/add-device
-// Registers or updates a device in whitelist.json
-app.post('/api/add-device', (req, res) => {
+app.post('/api/add-device', async (req, res) => {
     try {
         const { deviceId, deviceName, status, expiresAt } = req.body;
 
@@ -150,7 +288,7 @@ app.post('/api/add-device', (req, res) => {
             });
         }
 
-        const db = readWhitelistDb();
+        const db = await readWhitelistDb();
         const cleanDeviceId = deviceId.trim();
         const existingIndex = db.devices.findIndex(d => d.deviceId.toLowerCase() === cleanDeviceId.toLowerCase());
 
@@ -171,14 +309,7 @@ app.post('/api/add-device', (req, res) => {
             console.log(`[WHITELIST] Added new device: ${cleanDeviceId}`);
         }
 
-        const success = writeWhitelistDb(db);
-        if (!success) {
-            return res.status(500).json({
-                status: 'error',
-                code: 500,
-                message: 'Gagal menyimpan data ke database whitelist.'
-            });
-        }
+        await writeWhitelistDb(db, `Add/Update device: ${cleanDeviceId}`);
 
         return res.status(200).json({
             status: 'success',
@@ -197,10 +328,9 @@ app.post('/api/add-device', (req, res) => {
 });
 
 // 3. Endpoint GET /api/devices
-// Returns list of all whitelisted devices
-app.get('/api/devices', (req, res) => {
+app.get('/api/devices', async (req, res) => {
     try {
-        const db = readWhitelistDb();
+        const db = await readWhitelistDb();
         return res.status(200).json({
             status: 'success',
             devices: db.devices || []
@@ -216,11 +346,10 @@ app.get('/api/devices', (req, res) => {
 });
 
 // 4. Endpoint DELETE /api/devices/:deviceId
-// Removes a device from whitelist
-app.delete('/api/devices/:deviceId', (req, res) => {
+app.delete('/api/devices/:deviceId', async (req, res) => {
     try {
         const deviceId = req.params.deviceId;
-        const db = readWhitelistDb();
+        const db = await readWhitelistDb();
         const initialLen = db.devices.length;
 
         db.devices = db.devices.filter(d => d.deviceId.toLowerCase() !== deviceId.toLowerCase());
@@ -233,7 +362,7 @@ app.delete('/api/devices/:deviceId', (req, res) => {
             });
         }
 
-        writeWhitelistDb(db);
+        await writeWhitelistDb(db, `Delete device: ${deviceId}`);
         console.log(`[WHITELIST] Deleted device: ${deviceId}`);
 
         return res.status(200).json({
@@ -251,10 +380,9 @@ app.delete('/api/devices/:deviceId', (req, res) => {
 });
 
 // 5. Endpoint GET /api/version
-// Returns current app update configuration
-app.get('/api/version', (req, res) => {
+app.get('/api/version', async (req, res) => {
     try {
-        const db = readWhitelistDb();
+        const db = await readWhitelistDb();
         const updateInfo = db.updateInfo || {
             latestVersionCode: 1,
             latestVersionName: "1.0.0",
@@ -274,12 +402,11 @@ app.get('/api/version', (req, res) => {
 });
 
 // 6. Endpoint POST /api/version
-// Updates app update configuration (for admin dashboard)
-app.post('/api/version', (req, res) => {
+app.post('/api/version', async (req, res) => {
     try {
         const { latestVersionCode, latestVersionName, updateUrl, releaseNotes, mandatory } = req.body;
 
-        const db = readWhitelistDb();
+        const db = await readWhitelistDb();
         db.updateInfo = {
             latestVersionCode: parseInt(latestVersionCode) || 1,
             latestVersionName: latestVersionName ? latestVersionName.trim() : "1.0.0",
@@ -288,14 +415,7 @@ app.post('/api/version', (req, res) => {
             mandatory: !!mandatory
         };
 
-        const success = writeWhitelistDb(db);
-        if (!success) {
-            return res.status(500).json({
-                status: 'error',
-                code: 500,
-                message: 'Gagal menyimpan konfigurasi update.'
-            });
-        }
+        await writeWhitelistDb(db, `Update app version config (v${db.updateInfo.latestVersionName})`);
 
         return res.status(200).json({
             status: 'success',
@@ -313,9 +433,9 @@ app.post('/api/version', (req, res) => {
 });
 
 // 7. Endpoint GET /api/broadcast
-app.get('/api/broadcast', (req, res) => {
+app.get('/api/broadcast', async (req, res) => {
     try {
-        const db = readWhitelistDb();
+        const db = await readWhitelistDb();
         return res.status(200).json(db.broadcast || { active: false });
     } catch (error) {
         console.error('API GET /broadcast error:', error);
@@ -324,10 +444,10 @@ app.get('/api/broadcast', (req, res) => {
 });
 
 // 8. Endpoint POST /api/broadcast
-app.post('/api/broadcast', (req, res) => {
+app.post('/api/broadcast', async (req, res) => {
     try {
         const { title, message, active } = req.body;
-        const db = readWhitelistDb();
+        const db = await readWhitelistDb();
 
         db.broadcast = {
             id: 'bc_' + Date.now(),
@@ -337,10 +457,7 @@ app.post('/api/broadcast', (req, res) => {
             timestamp: new Date().toISOString()
         };
 
-        const success = writeWhitelistDb(db);
-        if (!success) {
-            return res.status(500).json({ status: 'error', message: 'Gagal menyimpan broadcast.' });
-        }
+        await writeWhitelistDb(db, `Update broadcast: ${db.broadcast.title}`);
 
         return res.status(200).json({
             status: 'success',
@@ -354,14 +471,14 @@ app.post('/api/broadcast', (req, res) => {
 });
 
 // 9. Endpoint POST /api/request-whitelist
-app.post('/api/request-whitelist', (req, res) => {
+app.post('/api/request-whitelist', async (req, res) => {
     try {
         const { deviceId, deviceName } = req.body;
         if (!deviceId || typeof deviceId !== 'string' || deviceId.trim() === '') {
             return res.status(400).json({ status: 'error', message: 'Parameter deviceId wajib diisi.' });
         }
 
-        const db = readWhitelistDb();
+        const db = await readWhitelistDb();
         const cleanDeviceId = deviceId.trim();
         const existingIndex = db.devices.findIndex(d => d.deviceId.toLowerCase() === cleanDeviceId.toLowerCase());
 
@@ -383,10 +500,7 @@ app.post('/api/request-whitelist', (req, res) => {
             db.devices.push(deviceRecord);
         }
 
-        const success = writeWhitelistDb(db);
-        if (!success) {
-            return res.status(500).json({ status: 'error', message: 'Gagal mengirim permohonan whitelist.' });
-        }
+        await writeWhitelistDb(db, `New whitelist request from ${cleanDeviceId} (${deviceRecord.deviceName})`);
 
         return res.status(200).json({
             status: 'success',
@@ -401,14 +515,14 @@ app.post('/api/request-whitelist', (req, res) => {
 });
 
 // 10. Endpoint POST /api/approve-device
-app.post('/api/approve-device', (req, res) => {
+app.post('/api/approve-device', async (req, res) => {
     try {
         const { deviceId, status } = req.body;
         if (!deviceId) {
             return res.status(400).json({ status: 'error', message: 'Device ID wajib diisi.' });
         }
 
-        const db = readWhitelistDb();
+        const db = await readWhitelistDb();
         const dev = db.devices.find(d => d.deviceId.toLowerCase() === deviceId.trim().toLowerCase());
         if (!dev) {
             return res.status(404).json({ status: 'error', message: 'Perangkat tidak ditemukan.' });
@@ -416,7 +530,7 @@ app.post('/api/approve-device', (req, res) => {
 
         dev.status = status || 'active';
         dev.updatedAt = new Date().toISOString();
-        writeWhitelistDb(db);
+        await writeWhitelistDb(db, `Approve device: ${dev.deviceId} -> ${dev.status}`);
 
         console.log(`[WHITELIST] Device ${dev.deviceId} status updated to: ${dev.status}`);
         return res.status(200).json({
