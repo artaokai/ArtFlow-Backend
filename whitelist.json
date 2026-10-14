@@ -31,6 +31,14 @@
       "registeredAt": "2026-10-14T08:10:51.058Z",
       "updatedAt": "2026-10-14T08:10:55.802Z",
       "expiresAt": null
+    },
+    {
+      "deviceId": "b80d6e455687de39",
+      "deviceName": "Artrid",
+      "status": "pending",
+      "registeredAt": "2026-10-14T08:25:47.248Z",
+      "updatedAt": "2026-10-14T08:25:47.248Z",
+      "expiresAt": null
     }
   ],
   "updateInfo": {
