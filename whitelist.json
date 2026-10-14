@@ -7,6 +7,14 @@
       "registeredAt": "2026-10-14T06:50:32.677Z",
       "updatedAt": "2026-10-14T06:52:41.053Z",
       "expiresAt": null
+    },
+    {
+      "deviceId": "2fd3e14067a28e32",
+      "deviceName": "Tiara",
+      "status": "pending",
+      "registeredAt": "2026-10-14T07:30:28.971Z",
+      "updatedAt": "2026-10-14T07:30:28.971Z",
+      "expiresAt": null
     }
   ],
   "updateInfo": {
