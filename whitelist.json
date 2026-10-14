@@ -23,6 +23,14 @@
       "registeredAt": "2026-10-14T07:46:24.589Z",
       "updatedAt": "2026-10-14T07:46:30.944Z",
       "expiresAt": null
+    },
+    {
+      "deviceId": "7b85b947668629fd",
+      "deviceName": "Andi Moca",
+      "status": "pending",
+      "registeredAt": "2026-10-14T08:10:51.058Z",
+      "updatedAt": "2026-10-14T08:10:51.058Z",
+      "expiresAt": null
     }
   ],
   "updateInfo": {
