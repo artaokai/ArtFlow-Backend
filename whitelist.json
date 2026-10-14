@@ -47,6 +47,14 @@
       "registeredAt": "2026-10-14T09:47:41.273Z",
       "updatedAt": "2026-10-14T09:47:41.273Z",
       "expiresAt": null
+    },
+    {
+      "deviceId": "a370416968a8942c",
+      "deviceName": "Tsani",
+      "status": "pending",
+      "registeredAt": "2026-10-14T10:38:04.024Z",
+      "updatedAt": "2026-10-14T10:38:04.024Z",
+      "expiresAt": null
     }
   ],
   "updateInfo": {
